@@ -24,4 +24,3 @@ target_link_libraries(${this} sfml-graphics sfml-window sfml-system sfml-audio)
 
 add_executable(app Application.cpp)
 target_link_libraries(app Game ${TORCH_LIBRARIES})
-target_include_directories(app PRIVATE ${TORCH_INCLUDE_DIRS})
