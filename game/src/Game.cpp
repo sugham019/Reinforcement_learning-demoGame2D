@@ -1,4 +1,5 @@
 #include "Game.hpp"
+#include <iostream>
 #include "components/CollisionDetector.hpp"
 #include <SFML/System/Clock.hpp>
 #include "components/ErrorHandler.hpp"
@@ -16,7 +17,7 @@
 #include <SFML/Graphics.hpp>
 #include <ctime>
 
-Game::Game(): m_eventHandler(*this){
+Game::Game(): m_eventHandler(*this), m_rewardSender("rl_game"){
     init();
 }
 
@@ -49,14 +50,13 @@ void Game::startGameLoop(){
     const sf::Vector2f fallDown(0,200.0f);
     const sf::Vector2f jumpUp(0, -200.0f);
     const sf::Vector2f moveLeft(m_player->getMovementSpeed(), 0);
-    sf::Clock clock;
 
     while (m_window->isOpen()){
-        m_deltaTime = clock.restart().asSeconds();
+        m_deltaTime = m_clock.restart().asSeconds();
 
         if(m_player->isDead()){
             restart();
-            clock.restart();
+            m_clock.restart();
         }
         sf::Event event;
         while (m_window->pollEvent(event)){
@@ -70,9 +70,9 @@ void Game::startGameLoop(){
             updateObjectPosition(*m_player, fallDown);
         }
 
+        m_score += m_deltaTime;
         updateObjectPosition(*m_player, moveLeft);
         m_mapChunkGenerator->updateMap(m_camera.x);
-
 
         m_window->clear();
         renderer.draw(m_camera, m_map);
@@ -92,6 +92,7 @@ void Game::updateBulletPos(){
 }
 
 void Game::restart(){
+    m_score = 0;
     delete m_player;
     setupPlayerAndMap();
 }
@@ -160,13 +161,10 @@ void Game::handleCollision(GameObject& gameObject1, GameObject& gameObject2){
             if(m_isPlayerJumping){
                 m_isPlayerJumping = false;
             }
-        }else if(gameObject2.getType() == GameObjectType::LAVA){
+        }else if(gameObject2.getType() == GameObjectType::LAVA || gameObject2.getType() == GameObjectType::SPIKE){
             destroyObject(gameObject1);
-
-        }else if(gameObject2.getType() == GameObjectType::SPIKE){
-            destroyObject(gameObject1);
+            m_rewardSender.sendReward(Reward::DEAD);
         }
-
     }else if(gameObject1.getType() == GameObjectType::BULLET && gameObject2.getType() == GameObjectType::SPIKE){
 
         destroyObject(gameObject1);
@@ -176,6 +174,8 @@ void Game::handleCollision(GameObject& gameObject1, GameObject& gameObject2){
         if(gameObject2.getType() == GameObjectType::SPIKE){
             destroyObject(gameObject2);
             delete &gameObject2;
+            m_rewardSender.sendReward(Reward::SPIKE_BLASTED);
+            m_clock.restart();
         }
     }
 }

@@ -8,6 +8,7 @@
 #include "components/Keymap.hpp"
 #include "components/Map.hpp"
 #include "components/MapChunkGenerator.hpp"
+#include "components/RewardSender.hpp"
 #include "components/SpriteManager.hpp"
 #include "entities/GameObject.hpp"
 #include "entities/Player.hpp"
@@ -37,11 +38,15 @@ private:
     Player* m_player = nullptr;
     MapChunkGenerator* m_mapChunkGenerator = nullptr;
     CollisionDetector* m_collisionDetector = nullptr;
+    RewardSender m_rewardSender;
     sf::Vector2f m_camera;
+    sf::Clock m_clock;
+
     Map m_map;
+    float m_score = 0;
     bool m_isPlayerJumping = false;
     float m_jump, m_deltaTime;
 
-    static constexpr const char* WINDOW_NAME = "2d-Game";
+    static constexpr const char* WINDOW_NAME = "RL-Game";
     friend class EventHandler;
 };
