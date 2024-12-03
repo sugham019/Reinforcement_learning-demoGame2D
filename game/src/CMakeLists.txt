@@ -9,7 +9,7 @@ set(src
     components/Renderer.cpp
     components/SpriteManager.cpp
     components/ErrorHandler.cpp
-    
+    components/RewardSender.cpp
     entities/GameObject.cpp
     entities/Character.cpp
     entities/Bullet.cpp
