@@ -38,7 +38,6 @@ class Agent:
         agent_state = torch.load(self.save_file)
         self.eval_model.load_state_dict(agent_state['model_state_dict'])
         self.epsilon = agent_state['epsilon']
-        print(self.epsilon)
 
     def save(self):
         agent_state = {
