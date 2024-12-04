@@ -42,6 +42,7 @@ private:
     sf::Vector2f m_camera;
     sf::Clock m_clock;
 
+
     Map m_map;
     float m_score = 0;
     bool m_isPlayerJumping = false;

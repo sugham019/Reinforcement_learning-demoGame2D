@@ -9,6 +9,7 @@
 using namespace boost::interprocess;
 
 RewardSender::RewardSender(const std::string& sharedRegion): m_sharedRegion(sharedRegion.c_str()){
+    m_sharedRegion = sharedRegion;
     try {
         m_sharedMemoryObject = new shared_memory_object(create_only, sharedRegion.c_str(), read_write);
         m_sharedMemoryObject->truncate(sizeof(SharedData));
@@ -23,14 +24,11 @@ RewardSender::RewardSender(const std::string& sharedRegion): m_sharedRegion(shar
 }
 
 RewardSender::~RewardSender(){
-    shared_memory_object::remove(m_sharedRegion);
-    delete m_sharedMemoryObject;
-    delete m_mappedRegionInMemory;
+    m_mappedRegionInMemory->flush();
+    shared_memory_object::remove(m_sharedRegion.c_str());
 }
 
 void RewardSender::sendReward(const Reward& reward){
     SharedData& sharedData = *m_sharedData;
     sharedData.reward = static_cast<int>(reward);
-    while(sharedData.acknowledgement != 1);
-    sharedData.acknowledgement = 0;
 }

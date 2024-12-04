@@ -6,8 +6,7 @@
 enum class Reward: int{
 
     DEAD = -5,
-    SUCCESSFUL_JUMP = 5,
-    SPIKE_BLASTED = 3
+    SPIKE_BLASTED = 3,
 };
 
 class RewardSender{
@@ -23,8 +22,7 @@ private:
 
     struct SharedData {
         int reward = 0;
-        int acknowledgement = 0;
     } *m_sharedData = nullptr;
 
-    const char* m_sharedRegion;
+    std::string m_sharedRegion;
 };

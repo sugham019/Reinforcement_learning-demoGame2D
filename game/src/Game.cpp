@@ -1,11 +1,11 @@
 #include "Game.hpp"
-#include <iostream>
 #include "components/CollisionDetector.hpp"
 #include <SFML/System/Clock.hpp>
 #include "components/ErrorHandler.hpp"
 #include "components/Map.hpp"
 #include "components/MapChunkGenerator.hpp"
 #include "components/Renderer.hpp"
+#include "components/RewardSender.hpp"
 #include "components/SpriteManager.hpp"
 #include "components/Window.hpp"
 #include "entities/Bullet.hpp"
@@ -35,7 +35,7 @@ void Game::init(){
 }
 
 void Game::setupPlayerAndMap(){
-    const sf::Vector2f playerSpawn(CHUNK_WIDTH+70, 0.8 * WINDOW_HEIGHT);
+    const sf::Vector2f playerSpawn(CHUNK_WIDTH+70, 0.7 * WINDOW_HEIGHT);
     m_camera = playerSpawn;
     m_player = new Player(m_spriteManager.player, playerSpawn, 100, 20, true);
     m_player->lockCamera(m_camera);
@@ -50,6 +50,7 @@ void Game::startGameLoop(){
     const sf::Vector2f fallDown(0,200.0f);
     const sf::Vector2f jumpUp(0, -200.0f);
     const sf::Vector2f moveLeft(m_player->getMovementSpeed(), 0);
+    bool firstStart = true;
 
     while (m_window->isOpen()){
         m_deltaTime = m_clock.restart().asSeconds();
@@ -69,14 +70,13 @@ void Game::startGameLoop(){
         }else{
             updateObjectPosition(*m_player, fallDown);
         }
-
         m_score += m_deltaTime;
         updateObjectPosition(*m_player, moveLeft);
         m_mapChunkGenerator->updateMap(m_camera.x);
 
         m_window->clear();
         renderer.draw(m_camera, m_map);
-        m_window->display();  
+        m_window->display();
     }
 }
 
@@ -175,7 +175,6 @@ void Game::handleCollision(GameObject& gameObject1, GameObject& gameObject2){
             destroyObject(gameObject2);
             delete &gameObject2;
             m_rewardSender.sendReward(Reward::SPIKE_BLASTED);
-            m_clock.restart();
         }
     }
 }
@@ -191,3 +190,4 @@ void Game::destroyObject(GameObject& gameObject){
     }
     m_map.mapChunks[chunkNum % CHUNK_BUFFER_SIZE].gameObjects.remove(&gameObject);
 }
+
