@@ -47,17 +47,15 @@ void Game::setupPlayerAndMap(){
 void Game::startGameLoop(){
 
     Renderer renderer(*m_window);
-    const sf::Vector2f fallDown(0,200.0f);
-    const sf::Vector2f jumpUp(0, -200.0f);
+    const sf::Vector2f fallDown(0,0.2f);
+    const sf::Vector2f jumpUp(0, -0.2f);
     const sf::Vector2f moveLeft(m_player->getMovementSpeed(), 0);
     bool firstStart = true;
 
     while (m_window->isOpen()){
-        m_deltaTime = m_clock.restart().asSeconds();
 
         if(m_player->isDead()){
             restart();
-            m_clock.restart();
         }
         sf::Event event;
         while (m_window->pollEvent(event)){
@@ -66,11 +64,10 @@ void Game::startGameLoop(){
         updateBulletPos();
         if(m_jump>0){
             updateObjectPosition(*m_player, jumpUp);
-            m_jump -= 200 * m_deltaTime;
+            m_jump += jumpUp.y;
         }else{
             updateObjectPosition(*m_player, fallDown);
         }
-        m_score += m_deltaTime;
         updateObjectPosition(*m_player, moveLeft);
         m_mapChunkGenerator->updateMap(m_camera.x);
 
@@ -97,9 +94,7 @@ void Game::restart(){
     setupPlayerAndMap();
 }
 
-void Game::updateObjectPosition(GameObject& gameObject, const sf::Vector2f& movement){
-
-    const sf::Vector2f offset = movement *m_deltaTime;
+void Game::updateObjectPosition(GameObject& gameObject, const sf::Vector2f& offset){
 
     if(gameObject.isRigid()){
         const sf::Vector2f destination = gameObject.getPosInMap() + offset;
@@ -137,7 +132,7 @@ void Game::updateObjectPosition(GameObject& gameObject, const sf::Vector2f& move
 void Game::jump(){
 
     if(!m_isPlayerJumping){
-        m_jump = m_player->getSize().y * 1.7;
+        m_jump = m_player->getSize().y * 1.9;
         m_isPlayerJumping = true;
     }
 }
@@ -148,7 +143,7 @@ void Game::shoot(){
         sf::Vector2f pos = m_player->getPosInMap();
         pos.x += m_player->getSize().x + 1;
         pos.y += 10;
-        m_player->activeBullet = new Bullet(m_spriteManager.bullet, pos, direction, 350);
+        m_player->activeBullet = new Bullet(m_spriteManager.bullet, pos, direction, 0.6f);
         m_mapChunkGenerator->insertObjectInMap(*m_player->activeBullet);
     }
 }
@@ -168,14 +163,13 @@ void Game::handleCollision(GameObject& gameObject1, GameObject& gameObject2){
     }else if(gameObject1.getType() == GameObjectType::BULLET && gameObject2.getType() == GameObjectType::SPIKE){
 
         destroyObject(gameObject1);
+        destroyObject(gameObject2);
         delete &gameObject1;
-        m_player->activeBullet = nullptr;
+        delete &gameObject2;
 
-        if(gameObject2.getType() == GameObjectType::SPIKE){
-            destroyObject(gameObject2);
-            delete &gameObject2;
-            m_rewardSender.sendReward(Reward::SPIKE_BLASTED);
-        }
+        m_player->activeBullet = nullptr;
+        destroyObject(gameObject2);
+        m_rewardSender.sendReward(Reward::SPIKE_BLASTED);
     }
 }
 
