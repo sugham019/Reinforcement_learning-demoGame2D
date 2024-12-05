@@ -4,46 +4,54 @@ import numpy as np
 from agent import Agent
 import torch
 import pyautogui
+import pywinctl
 import cv2 as cv
 import subprocess
 from enum import Enum
 from multiprocessing import shared_memory
 
-class Action(Enum):
-    JUMP = "space"
-    SHOOT = "f"
+game_window_x = 0
+game_window_y = 0
+game_window_width = 1000
+game_window_height = 1000
 
 def getGameFrame() -> np.array:
-    screenshot = pyautogui.screenshot()
+    screenshot = pyautogui.screenshot(region=(game_window_x, game_window_y, game_window_width, game_window_height))
     grayscale = cv.cvtColor(np.array(screenshot), cv.COLOR_RGB2GRAY)
-    resize = cv.resize(grayscale, (200, 200))
+    resize = cv.resize(grayscale, (600, 600))
     extra_dim = np.expand_dims(resize, axis=0)
-    return resize
+    return extra_dim
 
-def dispatchAction(action: Action):
-    pyautogui.press(action.value)
-
-def getActinByCode(actionCode: int) -> Action:
-    if actionCode < 0 or actionCode > 1:
+def dispatchAction(action_code: int):
+    if action_code < 0 or action_code > 2:
         raise ValueError("Invalid action code")
     
-    return Action.JUMP if actionCode == 0 else Action.SHOOT
+    if action_code == 0:
+        pyautogui.press("space")
+    elif action_code == 1:
+        pyautogui.press("f")
 
 def main():
-    sh_memory = shared_memory.SharedMemory(name="rl_game17")
+    sh_memory = shared_memory.SharedMemory(name="rl_game")
     shm_array = np.ndarray((1,), dtype=np.int32, buffer=sh_memory.buf)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    total_plays = 20
-    batch_size = 8
-    input_format = torch.rand(size=(1, 200, 200))
+    game_window = pywinctl.getWindowsWithTitle("RL-Game")[0].rect
+    game_window_x, game_window_y, game_window_width, game_window_height = game_window
+    game_window_width -= game_window_x
+    game_window_height -= game_window_y
 
-    agent = Agent(gamma=0.9, epsilon=1.0, actions=2, input_format=input_format, batch_size=batch_size, device=device)
+    total_plays = 150
+    batch_size = 8
+    input_format = torch.rand(size=(1, 600, 600))
+    agent = Agent(gamma=0.8, epsilon=1.0, actions=3, input_format=input_format, batch_size=batch_size, device=device)
+
     for i in range(total_plays):
         frame = getGameFrame()
         reward = 0
-        while reward != -5:
+        score = 0
+        while reward != -25:
             action = agent.chose_action(frame)
-            dispatchAction(getActinByCode(action))
+            dispatchAction(action)
             next_frame = getGameFrame()
             reward = shm_array[0]
             shm_array[0] = 0
@@ -53,8 +61,9 @@ def main():
                 agent.learn()
 
             frame = next_frame
+            score += 1
 
-        print(f"Current play : {i}")
+        print(f"Current play : {i} Score : {score}")
 
     agent.save()
     sh_memory.close() 
