@@ -6,7 +6,7 @@ import os
 class Agent:
     
     def __init__(self, gamma: float, epsilon: float, actions: int, input_format: torch.Tensor,
-            batch_size: int, save_file="model.pth", device: torch.device = torch.device("cpu"), learning_rate=0.001, max_mem_size=1000, eps_min=0.01, eps_dec=5e-4):
+            batch_size: int, save_file="model.pth", device: torch.device = torch.device("cpu"), learning_rate=0.001, max_mem_size=5000, eps_min=0.01, eps_dec=5e-4):
 
         if input_format.dim() != 3:
             raise ValueError("Expected dimension of input format 3D (channel, height, width)")
@@ -28,6 +28,10 @@ class Agent:
         if(os.path.exists(save_file)):
             self.__load()
 
+        self.target_model = Model(input_format, self.total_actions, learning_rate).to(device)
+        self.target_model.load_state_dict(self.eval_model.state_dict())
+        self.target_model_refresh_interval = 100
+
         self.state_memory = numpy.zeros(shape=(self.mem_size, *input_format.size()), dtype=numpy.float32)
         self.next_state_memory = numpy.zeros(shape=(self.mem_size, *input_format.size()), dtype=numpy.float32)
         self.reward_memory = numpy.zeros(shape=self.mem_size, dtype=numpy.int32)
@@ -38,6 +42,7 @@ class Agent:
         agent_state = torch.load(self.save_file)
         self.eval_model.load_state_dict(agent_state['model_state_dict'])
         self.epsilon = agent_state['epsilon']
+        print(f"Loaded saved epsilon value {self.epsilon}")
 
     def save(self):
         agent_state = {
@@ -54,9 +59,9 @@ class Agent:
         self.reward_memory[index] = reward
         self.mem_ctr += 1
 
-    def chose_action(self, frame: numpy.ndarray):
+    def chose_action(self, frame: numpy.ndarray) -> int:
         if numpy.random.random() > self.epsilon:
-            state = torch.tensor([frame], dtype=torch.float).unsqueeze(0).to(self.device)
+            state = torch.tensor([frame], dtype=torch.float).to(self.device)
             action = self.eval_model(state)
             action = torch.argmax(action).item()
         else:
@@ -65,6 +70,10 @@ class Agent:
         return action
     
     def learn(self):
+        if self.mem_ctr % self.target_model_refresh_interval == 0:
+            print("Refreshing target model")
+            self.target_model.load_state_dict(self.eval_model.state_dict())
+
         self.eval_model.optimizer.zero_grad()
         max_mem = min(self.mem_ctr, self.mem_size)
         batch = numpy.random.choice(max_mem, self.batch_size, replace=False)
@@ -77,7 +86,7 @@ class Agent:
         action_batch = self.action_memory[batch]
 
         state_output = self.eval_model(state_batch)[batch_index, action_batch]
-        next_state_ouptut = self.eval_model.forward(next_state_batch)
+        next_state_ouptut = self.target_model(next_state_batch)
         target = reward_batch + self.gamma * torch.max(next_state_ouptut, dim=1)[0]
 
         loss = self.eval_model.loss_func(target, state_output).to(self.device)
