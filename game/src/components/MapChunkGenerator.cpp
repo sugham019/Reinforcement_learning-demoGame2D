@@ -76,7 +76,7 @@ void MapChunkGenerator::fillMapChunk(MapChunk& mapChunk){
 
     mapChunk.gameObjects.push_back(lava);
 
-    if(mapChunk.chunkNum == 1){ // Skip spike generation for player spawn chunk
+    if(mapChunk.chunkNum == 1 || mapChunk.chunkNum == 2){ // Skip spike generation for player spawn chunk and next one
         return;
     }
 
