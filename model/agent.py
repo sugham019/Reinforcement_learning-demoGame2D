@@ -24,13 +24,14 @@ class Agent:
         self.batch_size = batch_size
         self.save_file = save_file
         self.eval_model = Model(input_format, self.total_actions, learning_rate).to(device)
-        
+        self.learn_ctr = 0        
+
         if(os.path.exists(save_file)):
             self.__load()
 
         self.target_model = Model(input_format, self.total_actions, learning_rate).to(device)
         self.target_model.load_state_dict(self.eval_model.state_dict())
-        self.target_model_refresh_interval = 100
+        self.target_model_refresh_interval = 200
 
         self.state_memory = numpy.zeros(shape=(self.mem_size, *input_format.size()), dtype=numpy.float32)
         self.next_state_memory = numpy.zeros(shape=(self.mem_size, *input_format.size()), dtype=numpy.float32)
@@ -39,17 +40,12 @@ class Agent:
 
 
     def __load(self):
-        agent_state = torch.load(self.save_file)
-        self.eval_model.load_state_dict(agent_state['model_state_dict'])
-        self.epsilon = agent_state['epsilon']
-        print(f"Loaded saved epsilon value {self.epsilon}")
+        model_state = torch.load(self.save_file)
+        self.eval_model.load_state_dict(model_state)
 
     def save(self):
-        agent_state = {
-            'model_state_dict': self.eval_model.state_dict(),
-            'epsilon': self.epsilon
-        }
-        torch.save(agent_state, self.save_file)
+        model_state = self.eval_model.state_dict()
+        torch.save(model_state, self.save_file)
 
     def store_transition(self, state: numpy.ndarray, action: int, reward: int, next_state: numpy.ndarray):
         index = self.mem_ctr % self.mem_size
@@ -70,7 +66,7 @@ class Agent:
         return action
     
     def learn(self):
-        if self.mem_ctr % self.target_model_refresh_interval == 0:
+        if self.learn_ctr % self.target_model_refresh_interval == 0:
             print("Refreshing target model")
             self.target_model.load_state_dict(self.eval_model.state_dict())
 
@@ -93,7 +89,4 @@ class Agent:
         loss.backward()
         self.eval_model.optimizer.step()
         self.epsilon = self.epsilon - self.eps_decay if self.epsilon > self.eps_min else self.eps_min
-
-
-
-        
+        self.learn_ctr += 1

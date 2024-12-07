@@ -32,7 +32,7 @@ def dispatchAction(action_code: int):
         pyautogui.press("f")
 
 def main():
-    sh_memory = shared_memory.SharedMemory(name="rl_game")
+    sh_memory = shared_memory.SharedMemory(name="rl_game1")
     shm_array = np.ndarray((1,), dtype=np.int32, buffer=sh_memory.buf)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     game_window = pywinctl.getWindowsWithTitle("RL-Game")[0].rect
@@ -40,12 +40,13 @@ def main():
     game_window_width -= game_window_x
     game_window_height -= game_window_y
 
-    total_plays = 150
-    batch_size = 8
+    total_plays = 100
+    batch_size = 16
     input_format = torch.rand(size=(1, 600, 600))
-    agent = Agent(gamma=0.8, epsilon=1.0, actions=3, input_format=input_format, batch_size=batch_size, device=device)
+    agent = Agent(gamma=0.9, epsilon=1.0, actions=3, input_format=input_format, batch_size=batch_size, device=device)
 
     for i in range(total_plays):
+        
         frame = getGameFrame()
         reward = 0
         score = 0
@@ -55,15 +56,16 @@ def main():
             next_frame = getGameFrame()
             reward = shm_array[0]
             shm_array[0] = 0
-
             agent.store_transition(frame, action, reward, next_frame)
-            if agent.mem_ctr > batch_size:
-                agent.learn()
 
             frame = next_frame
             score += 1
 
+        if agent.mem_ctr > batch_size:
+            agent.learn()
+        
         print(f"Current play : {i} Score : {score}")
+        pyautogui.press("enter")
 
     agent.save()
     sh_memory.close() 
