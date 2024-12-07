@@ -5,9 +5,9 @@ using Key = sf::Keyboard::Key;
 
 struct Keymap{
 
-    Key Jump, Shoot;
+    Key Jump, Shoot, Resume;
 };
 
 constexpr Keymap getDefaultKeymap(){
-    return Keymap{Key::Space, Key::F};
+    return Keymap{Key::Space, Key::F, Key::Enter};
 }

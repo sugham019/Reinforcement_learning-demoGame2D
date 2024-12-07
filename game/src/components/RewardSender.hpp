@@ -6,7 +6,9 @@
 enum class Reward: int{
 
     DEAD = -25,
-    SPIKE_BLASTED = 25,
+    SPIKE_BLASTED = 15,
+    GOOD_SHOT = 3,
+    BAD_SHOT = -3
 };
 
 class RewardSender{

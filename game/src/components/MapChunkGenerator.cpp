@@ -81,7 +81,7 @@ void MapChunkGenerator::fillMapChunk(MapChunk& mapChunk){
     }
 
     int randomNum = 70 + rand() % 231;
-    const sf::Vector2f spikePosInMap(baseXCords + randomNum, WINDOW_HEIGHT-90);
+    const sf::Vector2f spikePosInMap(baseXCords + randomNum, WINDOW_HEIGHT-100);
     GameObject* spike = new GameObject(m_spriteManager.spike, spikePosInMap, 
             true, GameObjectType::SPIKE);
     

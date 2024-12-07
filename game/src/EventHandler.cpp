@@ -22,11 +22,16 @@ void EventHandler::submitEvent(sf::Event& event){
 }
 
 void EventHandler::handleKeyPressedEvent(const sf::Event::KeyEvent& keyEvent){
+    if(keyEvent.code == m_keymap.Resume){
+        m_game.m_isPaused = false;
+    }
 
-    if(keyEvent.code == m_keymap.Jump){
-        m_game.jump();
-    }else if(keyEvent.code == m_keymap.Shoot){
-        m_game.shoot();
+    if(!m_game.m_isPaused){
+        if(keyEvent.code == m_keymap.Jump){
+            m_game.jump();
+        }else if(keyEvent.code == m_keymap.Shoot){
+            m_game.shoot();
+        }
     }
 }
 

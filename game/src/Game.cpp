@@ -2,6 +2,7 @@
 #include "components/CollisionDetector.hpp"
 #include <SFML/System/Clock.hpp>
 #include "components/ErrorHandler.hpp"
+#include <iostream>
 #include "components/Map.hpp"
 #include "components/MapChunkGenerator.hpp"
 #include "components/Renderer.hpp"
@@ -17,7 +18,7 @@
 #include <SFML/Graphics.hpp>
 #include <ctime>
 
-Game::Game(): m_eventHandler(*this), m_rewardSender("rl_game"){
+Game::Game(): m_eventHandler(*this), m_rewardSender("rl_game1"){
     init();
 }
 
@@ -39,7 +40,6 @@ void Game::setupPlayerAndMap(){
     m_camera = playerSpawn;
     m_player = new Player(m_spriteManager.player, playerSpawn, 100, 20, true);
     m_player->lockCamera(m_camera);
-
     m_mapChunkGenerator = new MapChunkGenerator(m_map, m_camera.x);
     m_mapChunkGenerator->insertObjectInMap(*m_player);
 }
@@ -56,20 +56,27 @@ void Game::startGameLoop(){
 
         if(m_player->isDead()){
             restart();
+            m_isPaused = true;
+            std::cout << "Press Enter to restart" << std::endl;
         }
+
         sf::Event event;
         while (m_window->pollEvent(event)){
             m_eventHandler.submitEvent(event);
         }
-        updateBulletPos();
-        if(m_jump>0){
-            updateObjectPosition(*m_player, jumpUp);
-            m_jump += jumpUp.y;
-        }else{
-            updateObjectPosition(*m_player, fallDown);
+
+        if(!m_isPaused){
+
+            updateBulletPos();
+            if(m_jump>0){
+                updateObjectPosition(*m_player, jumpUp);
+                m_jump += jumpUp.y;
+            }else{
+                updateObjectPosition(*m_player, fallDown);
+            }
+            updateObjectPosition(*m_player, moveLeft);
+            m_mapChunkGenerator->updateMap(m_camera.x);
         }
-        updateObjectPosition(*m_player, moveLeft);
-        m_mapChunkGenerator->updateMap(m_camera.x);
 
         m_window->clear();
         renderer.draw(m_camera, m_map);
@@ -142,9 +149,14 @@ void Game::shoot(){
         sf::Vector2f direction(1, 0);
         sf::Vector2f pos = m_player->getPosInMap();
         pos.x += m_player->getSize().x + 1;
-        pos.y += 10;
-        m_player->activeBullet = new Bullet(m_spriteManager.bullet, pos, direction, 0.6f);
+        pos.y += 20;
+        m_player->activeBullet = new Bullet(m_spriteManager.bullet, pos, direction, 1.0f);
         m_mapChunkGenerator->insertObjectInMap(*m_player->activeBullet);
+        if(!m_isPlayerJumping){
+            m_rewardSender.sendReward(Reward::GOOD_SHOT);
+        }else{
+            m_rewardSender.sendReward(Reward::BAD_SHOT);
+        }
     }
 }
 
